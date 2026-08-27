@@ -1,0 +1,51 @@
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# Build Output
+build/
+build_linux/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/build/
+android/captures/
+*.so
+*.o
+*.a
+*.dylib
+*.dll
+*.exe
+
+# IDE / OS Files
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.user
+*.suo
+
+# LaTeX auxiliary files (for docs)
+docs/*.aux
+docs/*.log
+docs/*.out
+docs/*.toc
+docs/*.synctex.gz
+docs/*.fls
+docs/*.fdb_latexmk
+
+# Ensure PDF and Markdown docs stay tracked
+!docs/*.pdf
+!docs/*.md
+!docs/*.tex
