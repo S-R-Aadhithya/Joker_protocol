@@ -18,6 +18,7 @@ android/.gradle/
 android/local.properties
 android/build/
 android/captures/
+android/app/.cxx/
 *.so
 *.o
 *.a

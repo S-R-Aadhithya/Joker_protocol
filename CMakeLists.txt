@@ -32,7 +32,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
-    add_library(joker_jni SHARED adapters/android_jni/joker_jni.cpp)
+    add_library(joker_jni SHARED adapters/android_jni/joker_jni.cpp adapters/android_jni/udp_nic_adapter.cpp)
     target_link_libraries(joker_jni joker_core log)
 endif()
 
