@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "joker/cmsi.hpp"
+#include <thread>
 
 using namespace joker;
 

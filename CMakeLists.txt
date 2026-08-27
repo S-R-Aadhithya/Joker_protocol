@@ -31,6 +31,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_sources(joker_core PRIVATE adapters/linux_af_packet/linux_af_packet.cpp)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    add_library(joker_jni SHARED adapters/android_jni/joker_jni.cpp)
+    target_link_libraries(joker_jni joker_core log)
+endif()
+
 target_include_directories(joker_core PUBLIC include .)
 
 # GoogleTest
@@ -43,35 +48,37 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Enable testing
-enable_testing()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+    # Enable testing
+    enable_testing()
 
-add_executable(joker_tests
-    tests/unit/mac_address_test.cpp
-    tests/unit/crc32_test.cpp
-    tests/unit/mock_adapter_test.cpp
-    tests/unit/header_test.cpp
-    tests/unit/dedup_cache_test.cpp
-    tests/unit/routing_test.cpp
-    tests/unit/neighbor_test.cpp
-    tests/unit/candidate_test.cpp
-    tests/unit/timer_wheel_test.cpp
-    tests/unit/coordinator_timer_test.cpp
-    tests/unit/coordinator_ack_test.cpp
-    tests/unit/forwarding_test.cpp
-    tests/unit/cmsi_test.cpp
-    tests/unit/metrics_test.cpp
-)
-target_link_libraries(joker_tests PRIVATE joker_core GTest::gtest_main)
+    add_executable(joker_tests
+        tests/unit/mac_address_test.cpp
+        tests/unit/crc32_test.cpp
+        tests/unit/mock_adapter_test.cpp
+        tests/unit/header_test.cpp
+        tests/unit/dedup_cache_test.cpp
+        tests/unit/routing_test.cpp
+        tests/unit/neighbor_test.cpp
+        tests/unit/candidate_test.cpp
+        tests/unit/timer_wheel_test.cpp
+        tests/unit/coordinator_timer_test.cpp
+        tests/unit/coordinator_ack_test.cpp
+        tests/unit/forwarding_test.cpp
+        tests/unit/cmsi_test.cpp
+        tests/unit/metrics_test.cpp
+    )
+    target_link_libraries(joker_tests PRIVATE joker_core GTest::gtest_main)
 
-# Integration Tests
-add_executable(joker_integration_tests
-    tests/integration/integration_test.cpp
-    tests/integration/penetration_test.cpp
-)
-target_link_libraries(joker_integration_tests PRIVATE joker_core GTest::gtest_main)
+    # Integration Tests
+    add_executable(joker_integration_tests
+        tests/integration/integration_test.cpp
+        tests/integration/penetration_test.cpp
+    )
+    target_link_libraries(joker_integration_tests PRIVATE joker_core GTest::gtest_main)
 
-# Register tests with CTest
-include(GoogleTest)
-gtest_discover_tests(joker_tests)
-gtest_discover_tests(joker_integration_tests)
+    # Register tests with CTest
+    include(GoogleTest)
+    gtest_discover_tests(joker_tests)
+    gtest_discover_tests(joker_integration_tests)
+endif()

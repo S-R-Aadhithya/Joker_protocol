@@ -4,6 +4,7 @@
 #include "joker/interface.hpp" // For NicAdapter if we have it, else we mock
 #include "joker/config.hpp"
 #include "joker/metrics.hpp"
+#include <thread>
 
 #include "adapters/mock/mock_adapter.hpp"
 
