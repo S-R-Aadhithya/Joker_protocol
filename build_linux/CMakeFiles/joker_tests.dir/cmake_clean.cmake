@@ -1,0 +1,24 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/joker_tests.dir/tests/unit/crc32_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/crc32_test.cpp.o.d"
+  "CMakeFiles/joker_tests.dir/tests/unit/dedup_cache_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/dedup_cache_test.cpp.o.d"
+  "CMakeFiles/joker_tests.dir/tests/unit/header_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/header_test.cpp.o.d"
+  "CMakeFiles/joker_tests.dir/tests/unit/mac_address_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/mac_address_test.cpp.o.d"
+  "CMakeFiles/joker_tests.dir/tests/unit/mock_adapter_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/mock_adapter_test.cpp.o.d"
+  "CMakeFiles/joker_tests.dir/tests/unit/neighbor_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/neighbor_test.cpp.o.d"
+  "CMakeFiles/joker_tests.dir/tests/unit/routing_test.cpp.o"
+  "CMakeFiles/joker_tests.dir/tests/unit/routing_test.cpp.o.d"
+  "joker_tests"
+  "joker_tests.pdb"
+  "joker_tests[1]_tests.cmake"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/joker_tests.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

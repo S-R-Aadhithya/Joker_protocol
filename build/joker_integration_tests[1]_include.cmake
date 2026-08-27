@@ -1,0 +1,5 @@
+if(EXISTS "C:/Projects/Joker_protocol/build/joker_integration_tests[1]_tests.cmake")
+  include("C:/Projects/Joker_protocol/build/joker_integration_tests[1]_tests.cmake")
+else()
+  add_test(joker_integration_tests_NOT_BUILT joker_integration_tests_NOT_BUILT)
+endif()

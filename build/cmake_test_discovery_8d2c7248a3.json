@@ -1,0 +1,330 @@
+{
+  "tests": 48,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "MetricsTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "IncrementCounter",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/metrics_test.cpp",
+          "line": 6
+        },
+        {
+          "name": "SetGauge",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/metrics_test.cpp",
+          "line": 17
+        },
+        {
+          "name": "ObserveHistogram",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/metrics_test.cpp",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "name": "CmsiTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "CalculateCmsiZero",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/cmsi_test.cpp",
+          "line": 6
+        },
+        {
+          "name": "CalculateCmsiPositive",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/cmsi_test.cpp",
+          "line": 11
+        },
+        {
+          "name": "SchedulerClampsMin",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/cmsi_test.cpp",
+          "line": 16
+        },
+        {
+          "name": "SchedulerClampsMax",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/cmsi_test.cpp",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "name": "ForwardingTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "DropsMalformedHeader",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/forwarding_test.cpp",
+          "line": 27
+        },
+        {
+          "name": "LuckyLongTransmission",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/forwarding_test.cpp",
+          "line": 34
+        },
+        {
+          "name": "TtlZeroDropped",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/forwarding_test.cpp",
+          "line": 51
+        },
+        {
+          "name": "DuplicateDropped",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/forwarding_test.cpp",
+          "line": 67
+        },
+        {
+          "name": "OverheardNonCandidateSuppressesTimer",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/forwarding_test.cpp",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "name": "AckCoordinatorTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "CandidateSendsAckOnData",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/coordinator_ack_test.cpp",
+          "line": 12
+        },
+        {
+          "name": "TxAcceptsFirstAck",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/coordinator_ack_test.cpp",
+          "line": 28
+        },
+        {
+          "name": "ProcessTimeouts",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/coordinator_ack_test.cpp",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "name": "TimerCoordinatorTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "ScheduleAndFire",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/coordinator_timer_test.cpp",
+          "line": 14
+        },
+        {
+          "name": "OverheardSuppression",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/coordinator_timer_test.cpp",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "name": "TimerWheelTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "BasicSchedulingAndTick",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/timer_wheel_test.cpp",
+          "line": 9
+        },
+        {
+          "name": "Cancellation",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/timer_wheel_test.cpp",
+          "line": 28
+        },
+        {
+          "name": "MultipleTimersOrder",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/timer_wheel_test.cpp",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "name": "CandidateTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "SelectCandidatesBasic",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/candidate_test.cpp",
+          "line": 10
+        },
+        {
+          "name": "TieBreakDeterminism",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/candidate_test.cpp",
+          "line": 83
+        },
+        {
+          "name": "TruncateCount",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/candidate_test.cpp",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "name": "NeighborTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "UpdateAndLookup",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/neighbor_test.cpp",
+          "line": 8
+        },
+        {
+          "name": "ExpireStale",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/neighbor_test.cpp",
+          "line": 26
+        },
+        {
+          "name": "AllFresh",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/neighbor_test.cpp",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "name": "RoutingTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "FadeMargin",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/routing_test.cpp",
+          "line": 6
+        },
+        {
+          "name": "DistancePenalty",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/routing_test.cpp",
+          "line": 11
+        },
+        {
+          "name": "JokerLQ",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/routing_test.cpp",
+          "line": 19
+        },
+        {
+          "name": "CalculateTq",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/routing_test.cpp",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "name": "DedupCacheTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "BasicInsertAndContains",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/dedup_cache_test.cpp",
+          "line": 8
+        },
+        {
+          "name": "EvictsOldestWhenAtCapacity",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/dedup_cache_test.cpp",
+          "line": 15
+        },
+        {
+          "name": "InsertMovesToMostRecentlyUsed",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/dedup_cache_test.cpp",
+          "line": 29
+        },
+        {
+          "name": "EvictsExpired",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/dedup_cache_test.cpp",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "name": "HeaderTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "SerializeDeserialize",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/header_test.cpp",
+          "line": 7
+        },
+        {
+          "name": "DeserializeMalformed",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/header_test.cpp",
+          "line": 32
+        },
+        {
+          "name": "DeserializeInvalidType",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/header_test.cpp",
+          "line": 40
+        },
+        {
+          "name": "ValidateHeader",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/header_test.cpp",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "name": "MockAdapterTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "InitializeAndGetMac",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mock_adapter_test.cpp",
+          "line": 14
+        },
+        {
+          "name": "TransmitUnicastWhenNotRunning",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mock_adapter_test.cpp",
+          "line": 19
+        },
+        {
+          "name": "TransmitUnicastWhenRunning",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mock_adapter_test.cpp",
+          "line": 26
+        },
+        {
+          "name": "TransmitBroadcast",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mock_adapter_test.cpp",
+          "line": 41
+        },
+        {
+          "name": "ReceiveCallback",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mock_adapter_test.cpp",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "name": "Crc32Test",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "IsoHdlcVectors",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/crc32_test.cpp",
+          "line": 7
+        },
+        {
+          "name": "JokerPacketId",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/crc32_test.cpp",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "name": "MacAddressTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "ParseValid",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mac_address_test.cpp",
+          "line": 6
+        },
+        {
+          "name": "ParseInvalid",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mac_address_test.cpp",
+          "line": 18
+        },
+        {
+          "name": "Properties",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/unit\/mac_address_test.cpp",
+          "line": 26
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+Start testing: Aug 21 22:14 India Standard Time
+----------------------------------------------------------
+49/55 Testing: PenetrationTest.FuzzingAndMalformedPackets
+49/55 Test: PenetrationTest.FuzzingAndMalformedPackets
+Command: "C:/Projects/Joker_protocol/build/joker_integration_tests.exe" "--gtest_filter=PenetrationTest.FuzzingAndMalformedPackets" "--gtest_also_run_disabled_tests"
+Directory: C:/Projects/Joker_protocol/build
+"PenetrationTest.FuzzingAndMalformedPackets" start time: Aug 21 22:14 India Standard Time
+Output:
+----------------------------------------------------------
+Running main() from C:/Projects/Joker_protocol/build/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = PenetrationTest.FuzzingAndMalformedPackets
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PenetrationTest
+[ RUN      ] PenetrationTest.FuzzingAndMalformedPackets
+[       OK ] PenetrationTest.FuzzingAndMalformedPackets (5 ms)
+[----------] 1 test from PenetrationTest (5 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (5 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"PenetrationTest.FuzzingAndMalformedPackets" end time: Aug 21 22:14 India Standard Time
+"PenetrationTest.FuzzingAndMalformedPackets" time elapsed: 00:00:00
+----------------------------------------------------------
+
+50/55 Testing: PenetrationTest.ResourceExhaustion_DDoS
+50/55 Test: PenetrationTest.ResourceExhaustion_DDoS
+Command: "C:/Projects/Joker_protocol/build/joker_integration_tests.exe" "--gtest_filter=PenetrationTest.ResourceExhaustion_DDoS" "--gtest_also_run_disabled_tests"
+Directory: C:/Projects/Joker_protocol/build
+"PenetrationTest.ResourceExhaustion_DDoS" start time: Aug 21 22:14 India Standard Time
+Output:
+----------------------------------------------------------
+Running main() from C:/Projects/Joker_protocol/build/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = PenetrationTest.ResourceExhaustion_DDoS
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PenetrationTest
+[ RUN      ] PenetrationTest.ResourceExhaustion_DDoS
+[       OK ] PenetrationTest.ResourceExhaustion_DDoS (47 ms)
+[----------] 1 test from PenetrationTest (47 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (47 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"PenetrationTest.ResourceExhaustion_DDoS" end time: Aug 21 22:14 India Standard Time
+"PenetrationTest.ResourceExhaustion_DDoS" time elapsed: 00:00:00
+----------------------------------------------------------
+
+51/55 Testing: PenetrationTest.MacSpoofing
+51/55 Test: PenetrationTest.MacSpoofing
+Command: "C:/Projects/Joker_protocol/build/joker_integration_tests.exe" "--gtest_filter=PenetrationTest.MacSpoofing" "--gtest_also_run_disabled_tests"
+Directory: C:/Projects/Joker_protocol/build
+"PenetrationTest.MacSpoofing" start time: Aug 21 22:14 India Standard Time
+Output:
+----------------------------------------------------------
+Running main() from C:/Projects/Joker_protocol/build/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = PenetrationTest.MacSpoofing
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PenetrationTest
+[ RUN      ] PenetrationTest.MacSpoofing
+[       OK ] PenetrationTest.MacSpoofing (0 ms)
+[----------] 1 test from PenetrationTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"PenetrationTest.MacSpoofing" end time: Aug 21 22:14 India Standard Time
+"PenetrationTest.MacSpoofing" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/55 Testing: PenetrationTest.RoutingLoopEchoChamber
+52/55 Test: PenetrationTest.RoutingLoopEchoChamber
+Command: "C:/Projects/Joker_protocol/build/joker_integration_tests.exe" "--gtest_filter=PenetrationTest.RoutingLoopEchoChamber" "--gtest_also_run_disabled_tests"
+Directory: C:/Projects/Joker_protocol/build
+"PenetrationTest.RoutingLoopEchoChamber" start time: Aug 21 22:14 India Standard Time
+Output:
+----------------------------------------------------------
+Running main() from C:/Projects/Joker_protocol/build/_deps/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = PenetrationTest.RoutingLoopEchoChamber
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PenetrationTest
+[ RUN      ] PenetrationTest.RoutingLoopEchoChamber
+[       OK ] PenetrationTest.RoutingLoopEchoChamber (1 ms)
+[----------] 1 test from PenetrationTest (1 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (1 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"PenetrationTest.RoutingLoopEchoChamber" end time: Aug 21 22:14 India Standard Time
+"PenetrationTest.RoutingLoopEchoChamber" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Aug 21 22:14 India Standard Time

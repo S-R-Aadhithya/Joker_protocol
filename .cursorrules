@@ -1,0 +1,15 @@
+# Global Token & Efficiency Constraints
+
+## 1. Context Minimization
+- NEVER read entire folders or repositories unless explicitly ordered.
+- Request explicit permission via `@` file targets before analyzing code outside the immediate scope.
+- If a task can be done by looking at a single file, only read that file.
+
+## 2. Model Tiering
+- Default to using the fastest, lowest-token model (e.g., Gemini Flash) for boilerplate, explanations, and minor edits.
+- Flag the user to switch to a higher-tier model (e.g., Pro) ONLY for complex debugging or structural refactoring.
+
+## 3. Session State Maintenance
+- Maintain a running, ultra-compact `working.md` file in the root to track current progress.
+- Read this `working.md` at the start of each task to prevent re-analyzing past chat history or re-scanning the repo.
+- Maintain a separate `phases_summary.md` file that tracks all implementation phases. Summarize the important implementations in that phase in simple terms with a clear flow. Always append information as we go along, and only update existing information if the logic was actually modified for that particular phase.

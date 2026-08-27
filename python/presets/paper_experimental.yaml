@@ -1,0 +1,28 @@
+# Reproducibility Config: JOKER Protocol Real-World Emulab Experiments (Paper §25)
+# This file matches the exact experimental parameters used in the paper's real-device test-bench.
+
+experimental_testbench:
+  platform: "Emulab"
+  runs_per_scenario: 5
+  duration_s: 180  # Three consecutive 60s streams
+
+network:
+  topology: "Fig. 3 (Relay Chain / Diamond)"
+  channel: 10
+  mac_layer: "IEEE 802.11g"
+
+physical_layer:
+  tx_power_mw: 1   # Reduced to 1 mW to force multi-hop routing
+  
+traffic:
+  tool: "Distributed Internet Traffic Generator v2.8.1"
+  packet_size_bytes: 512
+  avg_rate_kbps: 150
+  streams: 3
+  stream_duration_s: 60
+
+fault_injection:
+  enabled: true
+  method: "Randomly disable relay node NICs"
+  downtime_s: 5
+  onset_window_s: [30, 60] # Uniform onset between 30-60s into the run

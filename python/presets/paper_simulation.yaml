@@ -1,0 +1,57 @@
+# Reproducibility Config: JOKER Protocol Simulation (Paper §25)
+# This file matches the exact experimental parameters used in the paper's OMNeT++ INET simulations.
+
+simulation:
+  tool: "OMNeT++ v4.4.1 / InetManet v2.2"
+  runs_per_scenario: 10
+  duration_s: 75
+  confidence_interval: 0.95
+
+network:
+  nodes: 25
+  area_x_m: 500
+  area_y_m: 500
+  node_density_per_km2: 100
+
+mac_layer:
+  standard: "IEEE 802.11g"
+  rate_mbps: 54
+  mtu_bytes: 2304
+
+physical_layer:
+  tx_power_mw: 20       # 13 dBm
+  sensitivity_dbm: -74
+  snir_threshold_db: 4
+  propagation_models:
+    - "Free Space"
+    - "Nakagami-m (m=5)"
+  hardware_profile: "Broadcom BCM4330"
+
+mobility:
+  scenarios:
+    - "Static"
+    - "Random Waypoint"
+  random_waypoint:
+    speed_mean_m_s: 1.34
+    speed_std_dev_m_s: 0.26
+    pause_min_s: 2
+    pause_max_s: 5
+
+traffic:
+  application: "InetManet UDPVideoServer2"
+  trace: "H.264/SVC single-layer VBR"
+  duration_s: 30
+  fps: 30
+  resolution: "QCIF (176x144)"
+  gop: "16B1"
+  avg_frame_bytes: 485.5
+  avg_rate_kbps: 118
+  flow_start_distribution: "Poisson(0, 10)s after routing convergence"
+  scenarios:
+    - streams: 1  # Low traffic
+    - streams: 5  # High traffic
+
+energy_model:
+  model: "Feeney et al."
+  voltage_v: 3.6
+  states_from: "BCM4330 datasheet"

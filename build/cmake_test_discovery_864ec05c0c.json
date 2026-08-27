@@ -1,0 +1,53 @@
+{
+  "tests": 7,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "PenetrationTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "FuzzingAndMalformedPackets",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/penetration_test.cpp",
+          "line": 45
+        },
+        {
+          "name": "ResourceExhaustion_DDoS",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/penetration_test.cpp",
+          "line": 83
+        },
+        {
+          "name": "MacSpoofing",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/penetration_test.cpp",
+          "line": 111
+        },
+        {
+          "name": "RoutingLoopEchoChamber",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/penetration_test.cpp",
+          "line": 141
+        }
+      ]
+    },
+    {
+      "name": "IntegrationTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "TimerFlowAndSuppression",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/integration_test.cpp",
+          "line": 45
+        },
+        {
+          "name": "LuckyLongTransmission",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/integration_test.cpp",
+          "line": 86
+        },
+        {
+          "name": "TtlExpiration",
+          "file": "C:\/Projects\/Joker_protocol\/tests\/integration\/integration_test.cpp",
+          "line": 130
+        }
+      ]
+    }
+  ]
+}

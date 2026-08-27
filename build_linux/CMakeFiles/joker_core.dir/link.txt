@@ -1,0 +1,2 @@
+/usr/bin/ar qc libjoker_core.a CMakeFiles/joker_core.dir/src/mac_address.cpp.o CMakeFiles/joker_core.dir/src/crc32.cpp.o CMakeFiles/joker_core.dir/src/header.cpp.o CMakeFiles/joker_core.dir/src/dedup_cache.cpp.o CMakeFiles/joker_core.dir/src/neighbor.cpp.o CMakeFiles/joker_core.dir/src/routing.cpp.o CMakeFiles/joker_core.dir/src/ogm.cpp.o CMakeFiles/joker_core.dir/adapters/mock/mock_adapter.cpp.o CMakeFiles/joker_core.dir/adapters/linux_af_packet/linux_af_packet.cpp.o
+/usr/bin/ranlib libjoker_core.a

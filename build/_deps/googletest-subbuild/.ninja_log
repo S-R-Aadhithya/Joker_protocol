@@ -1,0 +1,21 @@
+# ninja log v7
+2	149	8083836765153902	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-mkdir	9a57c0466b20a04c
+2	149	8083836765153902	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-mkdir	9a57c0466b20a04c
+151	3960	8083836803231552	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-download	d7bf235d1889259
+151	3960	8083836803231552	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-download	d7bf235d1889259
+3962	4060	8083836804273896	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-update	38afb3433c9d2cdc
+3962	4060	8083836804273896	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-update	38afb3433c9d2cdc
+4060	4152	8083836805203870	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-patch	8da3308fee3c6f3f
+4060	4152	8083836805203870	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-patch	8da3308fee3c6f3f
+4152	4239	8083836806074017	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-configure	a3f8ede54b44d0e1
+4152	4239	8083836806074017	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-configure	a3f8ede54b44d0e1
+4239	4328	8083836806950965	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-build	aa75910b950cbe29
+4239	4328	8083836806950965	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-build	aa75910b950cbe29
+4329	4423	8083836807910915	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-install	f9c20388452e51c
+4329	4423	8083836807910915	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-install	f9c20388452e51c
+4423	4509	8083836808770913	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-test	3a43c5fe7330920f
+4423	4509	8083836808770913	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-test	3a43c5fe7330920f
+4510	4632	8083836810005963	CMakeFiles/googletest-populate-complete	678cc0b159555400
+4510	4632	8083836810005963	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-done	678cc0b159555400
+4510	4632	8083836810005963	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/CMakeFiles/googletest-populate-complete	678cc0b159555400
+4510	4632	8083836810005963	C:/Projects/Joker_protocol/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-done	678cc0b159555400
