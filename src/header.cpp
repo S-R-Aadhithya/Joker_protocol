@@ -24,6 +24,7 @@ std::optional<uint32_t> get_u32_be(const std::vector<uint8_t>& data, size_t off)
 bool serialize_header(const JokerHeader& header, std::vector<uint8_t>& out) {
     out.push_back(static_cast<uint8_t>(header.type));
     out.push_back(header.ttl);
+    out.push_back(static_cast<uint8_t>(header.other_candidates.size())); // [ENGINEERING DEVIATION]
     put_u32_be(out, header.packet_id);
     out.insert(out.end(), header.final_destination.bytes().begin(),
                           header.final_destination.bytes().end());
@@ -35,7 +36,7 @@ bool serialize_header(const JokerHeader& header, std::vector<uint8_t>& out) {
 
 std::optional<JokerHeader> deserialize_header(const std::vector<uint8_t>& data,
                                                size_t& consumed) {
-    constexpr size_t kFixedSize = 1 + 1 + 4 + 6;  // type + ttl + id + dest MAC
+    constexpr size_t kFixedSize = 1 + 1 + 1 + 4 + 6;  // type + ttl + num_cands + id + dest MAC
     if (data.size() < kFixedSize) return std::nullopt;
 
     JokerHeader h{};
@@ -46,6 +47,7 @@ std::optional<JokerHeader> deserialize_header(const std::vector<uint8_t>& data,
     h.type = static_cast<PacketType>(data[off]); off += 1;
 
     h.ttl = data[off]; off += 1;
+    h.num_candidates = data[off]; off += 1; // [ENGINEERING DEVIATION]
 
     auto id = get_u32_be(data, off);
     if (!id) return std::nullopt;
@@ -56,13 +58,13 @@ std::optional<JokerHeader> deserialize_header(const std::vector<uint8_t>& data,
     h.final_destination = MacAddress(dest);
     off += 6;
 
-    // Remaining bytes must be an exact multiple of 6 (candidate MACs).
+    // Read exactly num_candidates MAC addresses
     size_t remaining = data.size() - off;
-    if (remaining % 6 != 0) return std::nullopt;
+    size_t expected_candidate_bytes = static_cast<size_t>(h.num_candidates) * 6;
+    if (remaining < expected_candidate_bytes) return std::nullopt;
     
-    size_t n_extra = remaining / 6;
-    h.other_candidates.reserve(n_extra);
-    for (size_t i = 0; i < n_extra; ++i) {
+    h.other_candidates.reserve(h.num_candidates);
+    for (size_t i = 0; i < h.num_candidates; ++i) {
         std::array<uint8_t, 6> mac{};
         std::copy_n(data.begin() + off, 6, mac.begin());
         h.other_candidates.emplace_back(mac);

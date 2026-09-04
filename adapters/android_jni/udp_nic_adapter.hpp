@@ -27,6 +27,9 @@ public:
     void Stop() override;
     [[nodiscard]] joker::MacAddress GetMacAddress() const override;
 
+    // Optional override to forcibly set peer IP for Unicast
+    void SetPeerIp(const std::string& ip);
+
 private:
     void ReceiveLoop();
     void SendUdpPacket(const std::vector<uint8_t>& frame);
@@ -34,6 +37,9 @@ private:
     std::string bind_ip_;
     uint16_t port_;
     joker::MacAddress mac_address_;
+    
+    std::string peer_ip_;
+    std::mutex peer_ip_mutex_;
     
     int socket_fd_;
     std::atomic<bool> running_;

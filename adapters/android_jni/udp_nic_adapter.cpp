@@ -5,12 +5,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstring>
+#ifdef __ANDROID__
 #include <android/log.h>
-#include <iostream>
-
 #define LOG_TAG "JokerUdpNic"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGI(fmt, ...) do { printf("[INFO] " fmt "\n", ##__VA_ARGS__); } while(0)
+#define LOGE(fmt, ...) do { fprintf(stderr, "[ERROR] " fmt "\n", ##__VA_ARGS__); } while(0)
+#endif
 
 namespace joker {
 namespace android {
@@ -32,7 +35,7 @@ void UdpNicAdapter::Start() {
         return;
     }
 
-    // Enable broadcast
+    // Enable broadcast (keeping it just in case)
     int broadcast_enable = 1;
     if (setsockopt(socket_fd_, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0) {
         LOGE("Failed to set SO_BROADCAST");
@@ -43,6 +46,15 @@ void UdpNicAdapter::Start() {
     if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &reuse_enable, sizeof(reuse_enable)) < 0) {
         LOGE("Failed to set SO_REUSEADDR");
     }
+    
+#ifdef SO_REUSEPORT
+    if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEPORT, &reuse_enable, sizeof(reuse_enable)) < 0) {
+        LOGE("Failed to set SO_REUSEPORT");
+    }
+#endif
+
+    // Removed IP_ADD_MEMBERSHIP and IP_MULTICAST_TTL because we are pivoting to Subnet Broadcast
+    // to bypass Android's broken Multicast routing over Wi-Fi Direct interfaces.
 
     sockaddr_in bind_addr{};
     memset(&bind_addr, 0, sizeof(bind_addr));
@@ -92,6 +104,12 @@ joker::MacAddress UdpNicAdapter::GetMacAddress() const {
     return mac_address_;
 }
 
+void UdpNicAdapter::SetPeerIp(const std::string& ip) {
+    std::lock_guard<std::mutex> lock(peer_ip_mutex_);
+    peer_ip_ = ip;
+    LOGI("Peer IP explicitly set to: %s", peer_ip_.c_str());
+}
+
 void UdpNicAdapter::TransmitUnicast(const joker::MacAddress& destination, const std::vector<uint8_t>& frame) {
     // In a physical wireless medium, a unicast frame is physically broadcasted over the air.
     // Neighbors overhear it and drop it if the destination MAC doesn't match theirs.
@@ -110,7 +128,25 @@ void UdpNicAdapter::SendUdpPacket(const std::vector<uint8_t>& frame) {
     memset(&dest_addr, 0, sizeof(dest_addr));
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port_);
-    dest_addr.sin_addr.s_addr = inet_addr("255.255.255.255"); // Subnet broadcast
+    std::string broadcast_ip = "255.255.255.255";
+    if (!bind_ip_.empty() && bind_ip_ != "0.0.0.0") {
+        size_t last_dot = bind_ip_.find_last_of('.');
+        if (last_dot != std::string::npos) {
+            broadcast_ip = bind_ip_.substr(0, last_dot) + ".255";
+        }
+    }
+    
+    std::string dest_ip;
+    {
+        std::lock_guard<std::mutex> lock(peer_ip_mutex_);
+        dest_ip = peer_ip_;
+    }
+
+    if (!dest_ip.empty()) {
+        dest_addr.sin_addr.s_addr = inet_addr(dest_ip.c_str());
+    } else {
+        dest_addr.sin_addr.s_addr = inet_addr(broadcast_ip.c_str()); // Subnet Broadcast
+    }
 
     ssize_t sent_bytes = sendto(socket_fd_, frame.data(), frame.size(), 0,
                                 (struct sockaddr*)&dest_addr, sizeof(dest_addr));
@@ -138,6 +174,15 @@ void UdpNicAdapter::ReceiveLoop() {
         }
 
         if (received_bytes > 0) {
+            std::string sender_ip = inet_ntoa(sender_addr.sin_addr);
+            if (sender_ip != bind_ip_ && sender_ip != "127.0.0.1") {
+                std::lock_guard<std::mutex> lock(peer_ip_mutex_);
+                if (peer_ip_.empty()) {
+                    peer_ip_ = sender_ip;
+                    LOGI("Auto-captured peer IP for Unicast routing: %s", peer_ip_.c_str());
+                }
+            }
+
             std::vector<uint8_t> frame(buffer.begin(), buffer.begin() + received_bytes);
             
             std::lock_guard<std::mutex> lock(callback_mutex_);

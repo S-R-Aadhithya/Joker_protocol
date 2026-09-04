@@ -18,6 +18,7 @@ enum class PacketType : uint8_t {
 struct JokerHeader {
     PacketType   type;                 // 1 byte
     uint8_t      ttl;                  // 1 byte  [PAPER] default 32
+    uint8_t      num_candidates;       // 1 byte  [ENGINEERING DEVIATION: Required to parse variable length header]
     uint32_t     packet_id;            // 4 bytes [PAPER] CRC-32 of payload
     MacAddress   final_destination;    // 6 bytes [PAPER]
     
@@ -26,7 +27,7 @@ struct JokerHeader {
     std::vector<MacAddress> other_candidates;  // 6 bytes each [PAPER]
 
     [[nodiscard]] size_t WireSize() const {
-        return 12 + 6 * other_candidates.size();
+        return 13 + 6 * other_candidates.size(); // 13 because we added 1 byte num_candidates
     }
 };
 

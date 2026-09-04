@@ -1,13 +1,19 @@
 package com.example.jokerprotocol
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pDevice
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
@@ -23,16 +29,51 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.example.jokerprotocol.theme.JokerProtocolTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     
+    companion object {
+        private val _nativeLogs = MutableStateFlow<List<String>>(emptyList())
+        val nativeLogs = _nativeLogs.asStateFlow()
+
+        @JvmStatic
+        fun onNativeLog(message: String) {
+            _nativeLogs.update { it + message }
+        }
+
+        fun getLocalWifiDirectIp(groupOwnerIp: String): String {
+            try {
+                if (groupOwnerIp.isBlank() || groupOwnerIp == "0.0.0.0") return "0.0.0.0"
+                val prefix = groupOwnerIp.substringBeforeLast(".") + "."
+                val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+                for (intf in interfaces) {
+                    for (addr in intf.inetAddresses) {
+                        if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                            val ip = addr.hostAddress
+                            if (ip?.startsWith(prefix) == true) {
+                                return ip
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return "0.0.0.0"
+        }
+    }
+
     init {
         System.loadLibrary("joker_jni")
     }
@@ -40,13 +81,16 @@ class MainActivity : ComponentActivity() {
     external fun startJokerProtocol(bindIp: String, isGroupOwner: Boolean)
     external fun stopJokerProtocol()
     external fun sendChatMessage(message: String)
+    external fun setPeerIp(ip: String)
 
     private lateinit var wifiDirectManager: WiFiDirectManager
+    private var multicastLock: WifiManager.MulticastLock? = null
     
     // UI States
     private val peersState = mutableStateOf<List<WifiP2pDevice>>(emptyList())
     private val connectionState = mutableStateOf(false)
     private val groupOwnerIpState = mutableStateOf<String?>("0.0.0.0")
+    private val isGroupOwnerState = mutableStateOf(false)
     
     // New UI States for Discovery
     private val isDiscoveringState = mutableStateOf(false)
@@ -65,15 +109,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        multicastLock = wifiManager.createMulticastLock("JokerMulticastLock")
+        multicastLock?.acquire()
 
         wifiDirectManager = WiFiDirectManager(
             context = this,
             onPeersChanged = { peers ->
                 peersState.value = peers
             },
-            onConnectionChanged = { isConnected, ip ->
+            onConnectionChanged = { isConnected, ip, isGo ->
                 connectionState.value = isConnected
                 groupOwnerIpState.value = ip ?: "0.0.0.0"
+                isGroupOwnerState.value = isGo
             },
             onDiscoveryStateChanged = { isDiscovering, error ->
                 isDiscoveringState.value = isDiscovering
@@ -122,10 +171,20 @@ class MainActivity : ComponentActivity() {
                             peers = peersState.value,
                             isConnected = connectionState.value,
                             goIp = groupOwnerIpState.value,
+                            isGroupOwner = isGroupOwnerState.value,
                             isDiscovering = isDiscoveringState.value,
                             onDiscoverClick = { checkPermissionsAndDiscover() },
                             onConnectClick = { device -> wifiDirectManager.connectToPeer(device) },
-                            onStartProtocolClick = { ip -> startJokerProtocol(ip, true) },
+                            onStartProtocolClick = { ip, isGo -> 
+                                startJokerProtocol(ip, isGo) 
+                                if (!isGo && groupOwnerIpState.value != null && groupOwnerIpState.value != "0.0.0.0") {
+                                    setPeerIp(groupOwnerIpState.value!!)
+                                }
+                            },
+                            onStopProtocolClick = { 
+                                stopJokerProtocol()
+                                wifiDirectManager.disconnect()
+                            },
                             onSendChatClick = { msg -> sendChatMessage(msg) },
                             focusManager = focusManager
                         )
@@ -141,11 +200,23 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        wifiDirectManager.disconnect()
         wifiDirectManager.stopListening()
         stopJokerProtocol()
+        multicastLock?.release()
     }
 
     private fun checkPermissionsAndDiscover() {
+        // First check if Location Services (GPS) are globally enabled
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        
+        if (!isGpsEnabled && !isNetworkEnabled) {
+            errorMessageState.value = "Location Services must be turned ON in your phone's quick settings to discover Wi-Fi Direct peers."
+            return
+        }
+
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
@@ -172,15 +243,25 @@ fun MainUi(
     peers: List<WifiP2pDevice>,
     isConnected: Boolean,
     goIp: String?,
+    isGroupOwner: Boolean,
     isDiscovering: Boolean,
     onDiscoverClick: () -> Unit,
     onConnectClick: (WifiP2pDevice) -> Unit,
-    onStartProtocolClick: (String) -> Unit,
+    onStartProtocolClick: (String, Boolean) -> Unit,
+    onStopProtocolClick: () -> Unit,
     onSendChatClick: (String) -> Unit,
     focusManager: FocusManager
 ) {
     var chatMessage by remember { mutableStateOf("") }
     var protocolStarted by remember { mutableStateOf(false) }
+    
+    val logs by MainActivity.nativeLogs.collectAsState()
+    val context = LocalContext.current
+
+    BackHandler(enabled = protocolStarted) {
+        onStopProtocolClick()
+        protocolStarted = false
+    }
 
     Column(
         modifier = Modifier
@@ -190,6 +271,14 @@ fun MainUi(
             }
             .padding(16.dp)
     ) {
+        // App Title and Version
+        Text(
+            text = "JOKER Protocol v3.0",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
         // Status Card with animation
         Card(
             modifier = Modifier
@@ -222,7 +311,8 @@ fun MainUi(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { 
-                            onStartProtocolClick(goIp ?: "0.0.0.0")
+                            val bindIp = if (isGroupOwner) (goIp ?: "0.0.0.0") else MainActivity.getLocalWifiDirectIp(goIp ?: "")
+                            onStartProtocolClick(bindIp, isGroupOwner)
                             protocolStarted = true 
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -247,15 +337,33 @@ fun MainUi(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(if (isDiscovering) "Scanning for Peers..." else "Discover Peers")
-                    if (isDiscovering) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp), 
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    }
                 }
+            }
+            
+            if (isDiscovering) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    "Searching the area for Wi-Fi Direct devices...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { 
+                    onStartProtocolClick("0.0.0.0", true)
+                    protocolStarted = true 
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            ) {
+                Text("Force Start JOKER (Dev Mode)")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -291,35 +399,99 @@ fun MainUi(
                     }
                 }
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Discovery Logs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                IconButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Joker Logs", logs.joinToString("\n"))
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "Logs copied to clipboard!", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("📋")
+                }
+            }
+            
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                reverseLayout = true,
+                contentPadding = PaddingValues(bottom = 8.dp)
+            ) {
+                items(logs.reversed()) { log ->
+                    Text(
+                        text = log,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(vertical = 2.dp),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
         } else {
             // Chat UI for when the protocol is running
-            Text("Network Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = {
+                        onStopProtocolClick()
+                        protocolStarted = false
+                    }) {
+                        Text("⬅️")
+                    }
+                    Text("Live Log Monitor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                
+                IconButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Joker Logs", logs.joinToString("\n"))
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "Logs copied to clipboard!", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("📋")
+                }
+            }
             
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                // Placeholder for future log/chat list
-                Text(
-                    text = "Ready to transmit payloads...",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 8.dp)
+                ) {
+                    items(logs) { log ->
+                        Text(
+                            text = log,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
+                    }
+                }
             }
             
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
                     value = chatMessage,
                     onValueChange = { chatMessage = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Enter payload...") },
+                    placeholder = { Text("Enter message...") },
                     shape = RoundedCornerShape(24.dp),
                     singleLine = true
                 )

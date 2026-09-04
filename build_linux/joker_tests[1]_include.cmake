@@ -1,5 +1,0 @@
-if(EXISTS "/mnt/c/Projects/Joker_protocol/build_linux/joker_tests[1]_tests.cmake")
-  include("/mnt/c/Projects/Joker_protocol/build_linux/joker_tests[1]_tests.cmake")
-else()
-  add_test(joker_tests_NOT_BUILT joker_tests_NOT_BUILT)
-endif()

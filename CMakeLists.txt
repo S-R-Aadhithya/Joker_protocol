@@ -52,6 +52,11 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
     # Enable testing
     enable_testing()
 
+    # CLI Node for Laptop-to-Phone Testing
+    add_executable(joker_cli cli/main.cpp adapters/android_jni/udp_nic_adapter.cpp)
+    target_link_libraries(joker_cli PRIVATE joker_core)
+
+
     add_executable(joker_tests
         tests/unit/mac_address_test.cpp
         tests/unit/crc32_test.cpp

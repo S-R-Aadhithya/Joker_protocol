@@ -26,6 +26,15 @@ android/app/.cxx/
 *.dll
 *.exe
 
+# Gradle
+.gradle/
+gradlew.bat
+local.properties
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/libraries/
+.DS_Store
+
 # IDE / OS Files
 .idea/
 .vscode/
