@@ -1,11 +1,13 @@
 #pragma once
 
 #include "joker/interface.hpp"
+#include "joker/mac_address.hpp"
 #include <thread>
 #include <atomic>
 #include <mutex>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 namespace joker {
 namespace android {
@@ -27,21 +29,24 @@ public:
     void Stop() override;
     [[nodiscard]] joker::MacAddress GetMacAddress() const override;
 
-    // Optional override to forcibly set peer IP for Unicast
+    // Optional overrides to set peer IP for Unicast
     void SetPeerIp(const std::string& ip);
+    void SetPeerIpForMac(const joker::MacAddress& mac, const std::string& ip);
 
 private:
     void ReceiveLoop();
-    void SendUdpPacket(const std::vector<uint8_t>& frame);
+    void SendUdpPacket(const std::vector<uint8_t>& frame, const std::string& target_ip = "");
 
     std::string bind_ip_;
+    std::string broadcast_ip_;
     uint16_t port_;
     joker::MacAddress mac_address_;
     
     std::string peer_ip_;
+    std::unordered_map<joker::MacAddress, std::string, joker::MacAddressHash> peer_ips_;
     std::mutex peer_ip_mutex_;
     
-    int socket_fd_;
+    std::atomic<int> socket_fd_;
     std::atomic<bool> running_;
     std::thread receive_thread_;
     

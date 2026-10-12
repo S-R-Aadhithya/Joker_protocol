@@ -43,25 +43,45 @@ void TimerCoordinator::OnCandidateReceivedDataPacket(
         }
     }
 
+    std::lock_guard<std::mutex> lock(pending_mutex_);
     start_forward_timer(wheel_, pending_, header, frame, local_priority,
         config.twait_ms,
         [this, packet_id = header.packet_id, &nic, &metrics]() {
-            auto it = this->pending_.find(packet_id);
-            if (it != this->pending_.end()) {
-                nic.TransmitBroadcast(it->second.frame); // Broadcast for integration tests
+            std::vector<uint8_t> frame_to_send;
+            {
+                std::lock_guard<std::mutex> inner_lock(this->pending_mutex_);
+                auto it = this->pending_.find(packet_id);
+                if (it != this->pending_.end()) {
+                    frame_to_send = std::move(it->second.frame);
+                    this->pending_.erase(it);
+                }
             }
-            handle_forward_timer_expiry(packet_id, nic, metrics);
-            // We must remove it from pending_ when it fires!
-            this->pending_.erase(packet_id);
+            if (!frame_to_send.empty()) {
+                size_t consumed = 0;
+                auto hdr = deserialize_header(frame_to_send, consumed);
+                if (hdr && hdr->ttl > 1) {
+                    hdr->ttl -= 1;
+                    std::vector<uint8_t> new_frame;
+                    serialize_header(*hdr, new_frame);
+                    new_frame.insert(new_frame.end(), frame_to_send.begin() + consumed, frame_to_send.end());
+                    nic.TransmitBroadcast(new_frame);
+                } else if (hdr && hdr->ttl <= 1) {
+                    metrics.Increment("ttl_expired");
+                    return;
+                } else {
+                    nic.TransmitBroadcast(frame_to_send);
+                }
+                handle_forward_timer_expiry(packet_id, nic, metrics);
+            }
         });
 }
 
 void TimerCoordinator::HandleOverheardForward(uint32_t packet_id) {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
     auto it = pending_.find(packet_id);
     if (it == pending_.end()) return;   // not something we were waiting on
     wheel_.Cancel(it->second.timer_id);  // [PAPER] suppress own forwarding
     pending_.erase(it);
-    // metrics.Increment("timer_suppressions");  // requires metrics ref threaded in
 }
 
 }  // namespace joker

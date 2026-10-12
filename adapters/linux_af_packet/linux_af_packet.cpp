@@ -87,6 +87,7 @@ void LinuxAfPacketAdapter::SetPromiscuousMode(bool enable) {
 }
 
 void LinuxAfPacketAdapter::RegisterReceiveCallback(ReceiveCallback callback) {
+    std::lock_guard<std::mutex> lock(callback_mutex_);
     callback_ = std::move(callback);
 }
 
@@ -127,6 +128,8 @@ void LinuxAfPacketAdapter::TransmitRaw(const MacAddress& dest, const std::vector
     std::memcpy(frame.data() + 14, payload.data(), payload.size());
 
     struct sockaddr_ll sll = {};
+    sll.sll_family = AF_PACKET;
+    sll.sll_protocol = htons(ETH_P_JOKER);
     sll.sll_ifindex = ifindex_;
     sll.sll_halen = ETH_ALEN;
     std::memcpy(sll.sll_addr, dest.bytes().data(), 6);
@@ -174,11 +177,16 @@ void LinuxAfPacketAdapter::ReceiveLoop() {
                 std::memcpy(&eth_type, buffer.data() + 12, 2);
                 
                 if (ntohs(eth_type) == ETH_P_JOKER) {
-                    bool is_candidate = (dest_mac == mac_);
+                    bool is_candidate = (dest_mac == mac_ || dest_mac.IsBroadcast());
                     
                     std::vector<uint8_t> payload(buffer.begin() + 14, buffer.begin() + len);
-                    if (callback_) {
-                        callback_(payload, mac_, is_candidate);
+                    ReceiveCallback cb;
+                    {
+                        std::lock_guard<std::mutex> lock(callback_mutex_);
+                        cb = callback_;
+                    }
+                    if (cb) {
+                        cb(payload, mac_, is_candidate);
                     }
                 }
             }

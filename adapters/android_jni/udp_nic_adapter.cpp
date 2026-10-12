@@ -20,6 +20,13 @@ namespace android {
 
 UdpNicAdapter::UdpNicAdapter(const std::string& bind_ip, uint16_t port, const joker::MacAddress& mac_address)
     : bind_ip_(bind_ip), port_(port), mac_address_(mac_address), socket_fd_(-1), running_(false) {
+    broadcast_ip_ = "255.255.255.255";
+    if (!bind_ip_.empty() && bind_ip_ != "0.0.0.0") {
+        size_t last_dot = bind_ip_.find_last_of('.');
+        if (last_dot != std::string::npos) {
+            broadcast_ip_ = bind_ip_.substr(0, last_dot) + ".255";
+        }
+    }
 }
 
 UdpNicAdapter::~UdpNicAdapter() {
@@ -27,50 +34,46 @@ UdpNicAdapter::~UdpNicAdapter() {
 }
 
 void UdpNicAdapter::Start() {
-    if (running_) return;
+    if (running_.load()) return;
 
-    socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
-    if (socket_fd_ < 0) {
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) {
         LOGE("Failed to create UDP socket");
         return;
     }
 
-    // Enable broadcast (keeping it just in case)
+    // Enable broadcast
     int broadcast_enable = 1;
-    if (setsockopt(socket_fd_, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0) {
+    if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0) {
         LOGE("Failed to set SO_BROADCAST");
     }
 
     // Allow address reuse
     int reuse_enable = 1;
-    if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &reuse_enable, sizeof(reuse_enable)) < 0) {
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse_enable, sizeof(reuse_enable)) < 0) {
         LOGE("Failed to set SO_REUSEADDR");
     }
     
 #ifdef SO_REUSEPORT
-    if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEPORT, &reuse_enable, sizeof(reuse_enable)) < 0) {
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &reuse_enable, sizeof(reuse_enable)) < 0) {
         LOGE("Failed to set SO_REUSEPORT");
     }
 #endif
-
-    // Removed IP_ADD_MEMBERSHIP and IP_MULTICAST_TTL because we are pivoting to Subnet Broadcast
-    // to bypass Android's broken Multicast routing over Wi-Fi Direct interfaces.
 
     sockaddr_in bind_addr{};
     memset(&bind_addr, 0, sizeof(bind_addr));
     bind_addr.sin_family = AF_INET;
     bind_addr.sin_port = htons(port_);
-    // Bind to INADDR_ANY to receive broadcasts regardless of the interface
     bind_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
 
-    if (bind(socket_fd_, (struct sockaddr*)&bind_addr, sizeof(bind_addr)) < 0) {
+    if (::bind(fd, (struct sockaddr*)&bind_addr, sizeof(bind_addr)) < 0) {
         LOGE("Failed to bind UDP socket to port %d", port_);
-        close(socket_fd_);
-        socket_fd_ = -1;
+        close(fd);
         return;
     }
 
-    running_ = true;
+    socket_fd_.store(fd);
+    running_.store(true);
     receive_thread_ = std::thread(&UdpNicAdapter::ReceiveLoop, this);
     LOGI("UdpNicAdapter started on port %d with Virtual MAC: %02x:%02x:%02x:%02x:%02x:%02x", 
          port_, mac_address_.bytes()[0], mac_address_.bytes()[1], mac_address_.bytes()[2], 
@@ -78,19 +81,21 @@ void UdpNicAdapter::Start() {
 }
 
 void UdpNicAdapter::Stop() {
-    if (!running_) return;
+    if (!running_.exchange(false)) return;
     
     LOGI("Stopping UdpNicAdapter...");
-    running_ = false;
-
-    if (socket_fd_ >= 0) {
-        // Close the socket to interrupt the blocking recvfrom in the thread
-        close(socket_fd_);
-        socket_fd_ = -1;
+    int fd = socket_fd_.load();
+    if (fd >= 0) {
+        shutdown(fd, SHUT_RDWR);
     }
 
     if (receive_thread_.joinable()) {
         receive_thread_.join();
+    }
+
+    if (fd >= 0) {
+        close(fd);
+        socket_fd_.store(-1);
     }
     LOGI("UdpNicAdapter stopped.");
 }
@@ -110,34 +115,44 @@ void UdpNicAdapter::SetPeerIp(const std::string& ip) {
     LOGI("Peer IP explicitly set to: %s", peer_ip_.c_str());
 }
 
+void UdpNicAdapter::SetPeerIpForMac(const joker::MacAddress& mac, const std::string& ip) {
+    std::lock_guard<std::mutex> lock(peer_ip_mutex_);
+    peer_ips_[mac] = ip;
+    if (peer_ip_.empty()) {
+        peer_ip_ = ip;
+    }
+    LOGI("Mapped MAC %s to Peer IP: %s", mac.ToString().c_str(), ip.c_str());
+}
+
 void UdpNicAdapter::TransmitUnicast(const joker::MacAddress& destination, const std::vector<uint8_t>& frame) {
-    // In a physical wireless medium, a unicast frame is physically broadcasted over the air.
-    // Neighbors overhear it and drop it if the destination MAC doesn't match theirs.
-    // Therefore, we simulate this physics by broadcasting all frames.
-    SendUdpPacket(frame);
+    std::string target_ip;
+    {
+        std::lock_guard<std::mutex> lock(peer_ip_mutex_);
+        auto it = peer_ips_.find(destination);
+        if (it != peer_ips_.end()) {
+            target_ip = it->second;
+        } else {
+            target_ip = peer_ip_;
+        }
+    }
+    SendUdpPacket(frame, target_ip);
 }
 
 void UdpNicAdapter::TransmitBroadcast(const std::vector<uint8_t>& frame) {
-    SendUdpPacket(frame);
+    SendUdpPacket(frame, "");
 }
 
-void UdpNicAdapter::SendUdpPacket(const std::vector<uint8_t>& frame) {
-    if (socket_fd_ < 0) return;
+void UdpNicAdapter::SendUdpPacket(const std::vector<uint8_t>& frame, const std::string& target_ip) {
+    int fd = socket_fd_.load();
+    if (fd < 0) return;
 
     sockaddr_in dest_addr{};
     memset(&dest_addr, 0, sizeof(dest_addr));
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port_);
-    std::string broadcast_ip = "255.255.255.255";
-    if (!bind_ip_.empty() && bind_ip_ != "0.0.0.0") {
-        size_t last_dot = bind_ip_.find_last_of('.');
-        if (last_dot != std::string::npos) {
-            broadcast_ip = bind_ip_.substr(0, last_dot) + ".255";
-        }
-    }
     
-    std::string dest_ip;
-    {
+    std::string dest_ip = target_ip;
+    if (dest_ip.empty()) {
         std::lock_guard<std::mutex> lock(peer_ip_mutex_);
         dest_ip = peer_ip_;
     }
@@ -145,10 +160,10 @@ void UdpNicAdapter::SendUdpPacket(const std::vector<uint8_t>& frame) {
     if (!dest_ip.empty()) {
         dest_addr.sin_addr.s_addr = inet_addr(dest_ip.c_str());
     } else {
-        dest_addr.sin_addr.s_addr = inet_addr(broadcast_ip.c_str()); // Subnet Broadcast
+        dest_addr.sin_addr.s_addr = inet_addr(broadcast_ip_.c_str()); // Subnet Broadcast
     }
 
-    ssize_t sent_bytes = sendto(socket_fd_, frame.data(), frame.size(), 0,
+    ssize_t sent_bytes = sendto(fd, frame.data(), frame.size(), 0,
                                 (struct sockaddr*)&dest_addr, sizeof(dest_addr));
                                 
     if (sent_bytes < 0) {
@@ -163,18 +178,29 @@ void UdpNicAdapter::ReceiveLoop() {
         sockaddr_in sender_addr{};
         socklen_t sender_len = sizeof(sender_addr);
         
-        ssize_t received_bytes = recvfrom(socket_fd_, buffer.data(), buffer.size(), 0,
+        int fd = socket_fd_.load();
+        if (fd < 0) break;
+
+        ssize_t received_bytes = recvfrom(fd, buffer.data(), buffer.size(), 0,
                                           (struct sockaddr*)&sender_addr, &sender_len);
                                           
         if (received_bytes < 0) {
-            if (running_) {
+            if (running_.load()) {
                 LOGE("Error receiving UDP packet: %s", strerror(errno));
             }
             break; // Socket closed or error, exit loop
         }
 
         if (received_bytes > 0) {
-            std::string sender_ip = inet_ntoa(sender_addr.sin_addr);
+            char ip_buf[INET_ADDRSTRLEN] = {0};
+            inet_ntop(AF_INET, &sender_addr.sin_addr, ip_buf, sizeof(ip_buf));
+            std::string sender_ip(ip_buf);
+            
+            // Drop packets originated by ourselves (loopback from broadcast)
+            if (!bind_ip_.empty() && bind_ip_ != "0.0.0.0" && sender_ip == bind_ip_) {
+                continue;
+            }
+
             if (sender_ip != bind_ip_ && sender_ip != "127.0.0.1") {
                 std::lock_guard<std::mutex> lock(peer_ip_mutex_);
                 if (peer_ip_.empty()) {

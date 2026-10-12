@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <optional>
+#include <mutex>
 #include "joker/header.hpp"
 #include "joker/mac_address.hpp"
 #include "joker/neighbor.hpp"
@@ -56,13 +57,17 @@ public:
     void HandleOverheardForward(uint32_t packet_id);
 
     // [ENGINEERING] Expose pending size for tests
-    size_t GetPendingCount() const { return pending_.size(); }
+    size_t GetPendingCount() const {
+        std::lock_guard<std::mutex> lock(pending_mutex_);
+        return pending_.size();
+    }
 
 // private:
     struct PendingForward {
         TimerId timer_id;
         std::vector<uint8_t> frame;  // retained for eventual forward
     };
+    mutable std::mutex pending_mutex_;
     std::unordered_map<uint32_t, PendingForward> pending_;
     TimerWheel& wheel_;
 };
@@ -89,7 +94,10 @@ public:
     // [ENGINEERING] Method to add a pending coordination on the TX side
     void AddPending(uint32_t packet_id, const std::vector<uint8_t>& frame, const std::chrono::steady_clock::time_point& deadline);
 
-    size_t GetPendingCount() const { return pending_.size(); }
+    size_t GetPendingCount() const {
+        std::lock_guard<std::mutex> lock(pending_mutex_);
+        return pending_.size();
+    }
 
 private:
     struct PendingCoordination {
@@ -98,6 +106,7 @@ private:
         std::chrono::steady_clock::time_point deadline; // [ENGINEERING] timeout
         std::optional<MacAddress> first_ack_sender;
     };
+    mutable std::mutex pending_mutex_;
     std::unordered_map<uint32_t, PendingCoordination> pending_;
 };
 

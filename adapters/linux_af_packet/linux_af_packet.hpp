@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <mutex>
 #include "joker/interface.hpp"
 #include "joker/mac_address.hpp"
 
@@ -35,6 +36,7 @@ private:
     MacAddress mac_;
 
     ReceiveCallback callback_;
+    std::mutex callback_mutex_;
     std::atomic<bool> running_;
     std::thread rx_thread_;
 

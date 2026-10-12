@@ -95,7 +95,16 @@ class WiFiDirectManager(
     }
 
     fun startListening() {
-        context.registerReceiver(receiver, intentFilter)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.registerReceiver(
+                context,
+                receiver,
+                intentFilter,
+                androidx.core.content.ContextCompat.RECEIVER_EXPORTED
+            )
+        } else {
+            context.registerReceiver(receiver, intentFilter)
+        }
     }
 
     fun stopListening() {
@@ -197,30 +206,12 @@ class WiFiDirectManager(
         isConnecting = true
         handler.postDelayed(connectTimeoutRunnable, 60000)
 
-        MainActivity.onNativeLog("[WiFi Direct] Stopping discovery before connecting to ${device.deviceName}...")
-        
-        manager?.stopPeerDiscovery(channel, object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                // Proceed with the new connection once the slate is clean
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    executeConnect(device)
-                }, 300)
-            }
-            override fun onFailure(reason: Int) {
-                // Proceed anyway, as it might fail if there was nothing to cancel
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    executeConnect(device)
-                }, 300)
-            }
-        })
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun executeConnect(device: WifiP2pDevice) {
         val config = WifiP2pConfig().apply {
             deviceAddress = device.deviceAddress
+            wps.setup = android.net.wifi.WpsInfo.PBC
+            groupOwnerIntent = 15
         }
-        MainActivity.onNativeLog("[WiFi Direct] Attempting to connect to ${device.deviceName}...")
+        MainActivity.onNativeLog("[WiFi Direct] Attempting to connect to ${device.deviceName} (${device.deviceAddress})...")
         manager?.connect(channel, config, object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
                 MainActivity.onNativeLog("[WiFi Direct] Connection initiated to ${device.deviceName}. Waiting for negotiation...")

@@ -28,6 +28,7 @@ void AckCoordinator::OnCandidateReceivedDataPacket(
 void AckCoordinator::HandleAck(const JokerHeader& header,
                                const std::vector<uint8_t>& /*frame*/,
                                size_t /*offset*/) {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
     auto it = pending_.find(header.packet_id);
     if (it == pending_.end()) return; // Stale/unknown ACK
 
@@ -59,6 +60,7 @@ void AckCoordinator::HandleForwardingMessage(const JokerHeader& header,
 
 // [ENGINEERING] Process timeouts
 void AckCoordinator::ProcessTimeouts(const std::chrono::steady_clock::time_point& now) {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
     for (auto it = pending_.begin(); it != pending_.end(); ) {
         if (now >= it->second.deadline) {
             it = pending_.erase(it);
@@ -69,10 +71,8 @@ void AckCoordinator::ProcessTimeouts(const std::chrono::steady_clock::time_point
 }
 
 // For tests: simulate the sender transmitting a DATA packet
-// Since we don't have a Sender interface, we can populate pending manually for tests.
-// Wait, I should add a helper to add to pending if needed, or define it in hpp.
-
 void AckCoordinator::AddPending(uint32_t packet_id, const std::vector<uint8_t>& frame, const std::chrono::steady_clock::time_point& deadline) {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
     pending_[packet_id] = {packet_id, frame, deadline, std::nullopt};
 }
 

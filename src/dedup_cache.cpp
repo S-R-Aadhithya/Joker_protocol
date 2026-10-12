@@ -7,15 +7,18 @@ bool DedupCache::Contains(uint32_t packet_id) const {
 }
 
 void DedupCache::Insert(uint32_t packet_id) {
-    if (Contains(packet_id)) {
+    if (capacity_ == 0) return;
+
+    auto it_idx = index_.find(packet_id);
+    if (it_idx != index_.end()) {
         // Move to back (most recently used)
-        auto it = index_[packet_id];
+        auto it = it_idx->second;
         lru_order_.splice(lru_order_.end(), lru_order_, it);
         it->inserted_at = std::chrono::steady_clock::now();
         return;
     }
 
-    if (index_.size() >= capacity_) {
+    if (index_.size() >= capacity_ && !lru_order_.empty()) {
         // Evict oldest (front of list)
         uint32_t oldest_id = lru_order_.front().packet_id;
         index_.erase(oldest_id);
