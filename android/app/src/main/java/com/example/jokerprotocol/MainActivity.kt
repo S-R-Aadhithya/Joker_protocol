@@ -264,7 +264,12 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.all { it.value }) {
+        val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions[Manifest.permission.NEARBY_WIFI_DEVICES] == true || permissions.values.any { it }
+        } else {
+            permissions.values.all { it }
+        }
+        if (granted) {
             wifiDirectManager.discoverPeers()
         } else {
             errorMessageState.value = "Permissions are required to scan for peers."
@@ -544,32 +549,40 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkPermissionsAndDiscover() {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        
-        if (!isGpsEnabled && !isNetworkEnabled) {
-            errorMessageState.value = "Location Services must be turned ON in your phone's quick settings to discover Wi-Fi Direct peers."
-            return
-        }
-
-        val permissions = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.NEARBY_WIFI_DEVICES)
-        }
+            val hasNearby = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.NEARBY_WIFI_DEVICES
+            ) == PackageManager.PERMISSION_GRANTED
 
-        val missing = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (missing.isEmpty()) {
-            wifiDirectManager.discoverPeers()
+            if (hasNearby) {
+                wifiDirectManager.discoverPeers()
+            } else {
+                requestPermissionLauncher.launch(arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES))
+            }
         } else {
-            requestPermissionLauncher.launch(missing.toTypedArray())
+            val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+            
+            if (!isGpsEnabled && !isNetworkEnabled) {
+                errorMessageState.value = "Location Services must be turned ON in your phone's quick settings to discover Wi-Fi Direct peers."
+                return
+            }
+
+            val permissions = arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+            val missing = permissions.filter {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }
+
+            if (missing.isEmpty()) {
+                wifiDirectManager.discoverPeers()
+            } else {
+                requestPermissionLauncher.launch(missing.toTypedArray())
+            }
         }
     }
 }

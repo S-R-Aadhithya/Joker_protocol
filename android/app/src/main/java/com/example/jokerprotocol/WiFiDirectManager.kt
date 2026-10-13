@@ -55,8 +55,10 @@ class WiFiDirectManager(
                     val state = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE, -1)
                     if (state == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) {
                         MainActivity.onNativeLog("[WiFi Direct] DISCOVERY_CHANGED: Hardware scan ACTUALLY STARTED.")
+                        onDiscoveryStateChanged(true, null)
                     } else if (state == WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED) {
                         MainActivity.onNativeLog("[WiFi Direct] DISCOVERY_CHANGED: Hardware scan STOPPED.")
+                        onDiscoveryStateChanged(false, null)
                     }
                 }
                 WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION -> {
@@ -66,12 +68,15 @@ class WiFiDirectManager(
                         
                         if (discoveryStartTime > 0) {
                             val duration = System.currentTimeMillis() - discoveryStartTime
-                            MainActivity.onNativeLog("[WiFi Direct] Scan completed in ${duration}ms. Found ${peers.deviceList.size} peers.")
-                            discoveryStartTime = 0
+                            MainActivity.onNativeLog("[WiFi Direct] Scan updated in ${duration}ms. Found ${peers.deviceList.size} peers.")
+                            if (peers.deviceList.isNotEmpty()) {
+                                discoveryStartTime = 0
+                            }
                         }
                         
-                        // Scanning finished when peers are updated
-                        onDiscoveryStateChanged(false, null)
+                        if (peers.deviceList.isNotEmpty()) {
+                            onDiscoveryStateChanged(false, null)
+                        }
                     }
                 }
                 WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
