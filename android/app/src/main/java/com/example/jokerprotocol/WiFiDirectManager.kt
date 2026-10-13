@@ -39,6 +39,7 @@ class WiFiDirectManager(
             MainActivity.onNativeLog("[WiFi Direct] Connection attempt timed out. Canceling connection in HAL...")
             manager?.cancelConnect(channel, null)
             isConnecting = false
+            onConnectionChanged(false, null, false)
         }
     }
     private val receiver = object : BroadcastReceiver() {
@@ -75,19 +76,32 @@ class WiFiDirectManager(
                 }
                 WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
                     val networkInfo = intent.getParcelableExtra<NetworkInfo>(WifiP2pManager.EXTRA_NETWORK_INFO)
-                    if (isConnecting) {
-                        isConnecting = false
-                        handler.removeCallbacks(connectTimeoutRunnable)
-                    }
-                    if (networkInfo?.isConnected == true) {
-                        manager?.requestConnectionInfo(channel) { info: WifiP2pInfo ->
+                    MainActivity.onNativeLog("[WiFi Direct] CONNECTION_CHANGED: isConnected=${networkInfo?.isConnected}, detailedState=${networkInfo?.detailedState}")
+
+                    manager?.requestConnectionInfo(channel) { info: WifiP2pInfo? ->
+                        if (info != null && info.groupFormed) {
+                            if (isConnecting) {
+                                isConnecting = false
+                                handler.removeCallbacks(connectTimeoutRunnable)
+                            }
                             val groupOwnerIp = info.groupOwnerAddress?.hostAddress
-                            MainActivity.onNativeLog("[WiFi Direct] Connected. Group Owner IP: $groupOwnerIp, isGroupOwner: ${info.isGroupOwner}")
+                            MainActivity.onNativeLog("[WiFi Direct] Connected! Group Owner IP: $groupOwnerIp, isGroupOwner: ${info.isGroupOwner}")
                             onConnectionChanged(true, groupOwnerIp, info.isGroupOwner)
+                        } else {
+                            if (isConnecting) {
+                                if (networkInfo?.detailedState == NetworkInfo.DetailedState.FAILED) {
+                                    MainActivity.onNativeLog("[WiFi Direct] Connection attempt failed at OS level.")
+                                    isConnecting = false
+                                    handler.removeCallbacks(connectTimeoutRunnable)
+                                    onConnectionChanged(false, null, false)
+                                } else {
+                                    MainActivity.onNativeLog("[WiFi Direct] Connection negotiation in progress (detailedState: ${networkInfo?.detailedState}). Waiting for acceptance...")
+                                }
+                            } else {
+                                MainActivity.onNativeLog("[WiFi Direct] Disconnected.")
+                                onConnectionChanged(false, null, false)
+                            }
                         }
-                    } else {
-                        MainActivity.onNativeLog("[WiFi Direct] Disconnected.")
-                        onConnectionChanged(false, null, false)
                     }
                 }
             }
@@ -117,12 +131,17 @@ class WiFiDirectManager(
 
     fun disconnect() {
         MainActivity.onNativeLog("[WiFi Direct] Disconnecting and removing Wi-Fi Direct group...")
+        isConnecting = false
+        handler.removeCallbacks(connectTimeoutRunnable)
+        manager?.cancelConnect(channel, null)
         manager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
                 MainActivity.onNativeLog("[WiFi Direct] Successfully removed group.")
+                onConnectionChanged(false, null, false)
             }
             override fun onFailure(reason: Int) {
                 MainActivity.onNativeLog("[WiFi Direct] Failed to remove group. Code: $reason")
+                onConnectionChanged(false, null, false)
             }
         })
     }
@@ -209,7 +228,9 @@ class WiFiDirectManager(
         val config = WifiP2pConfig().apply {
             deviceAddress = device.deviceAddress
             wps.setup = android.net.wifi.WpsInfo.PBC
-            groupOwnerIntent = 15
+            // Do not force groupOwnerIntent to 15 to avoid tie-breaker conflict (Wi-Fi Direct spec status 9 GROUP_REMOVED).
+            // -1 lets the Android framework choose the appropriate role.
+            groupOwnerIntent = -1
         }
         MainActivity.onNativeLog("[WiFi Direct] Attempting to connect to ${device.deviceName} (${device.deviceAddress})...")
         manager?.connect(channel, config, object : WifiP2pManager.ActionListener {
@@ -220,6 +241,7 @@ class WiFiDirectManager(
                 isConnecting = false
                 handler.removeCallbacks(connectTimeoutRunnable)
                 MainActivity.onNativeLog("[WiFi Direct] Connect failed with code: $reason")
+                onConnectionChanged(false, null, false)
             }
         })
     }
